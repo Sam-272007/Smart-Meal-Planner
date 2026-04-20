@@ -1,0 +1,34 @@
+import { initializeApp } from 'firebase/app';
+import { getAuth } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
+
+const firebaseConfig = {
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "dummy",
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "dummy",
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "dummy",
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "dummy",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "dummy",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || "dummy"
+};
+
+// We only initialize Firebase if we have a real config, otherwise we use mocks
+const isFirebaseConfigured = firebaseConfig.apiKey !== "dummy";
+
+let app, auth, db;
+
+if (isFirebaseConfigured) {
+  app = initializeApp(firebaseConfig);
+  auth = getAuth(app);
+  db = getFirestore(app);
+} else {
+  console.warn("Firebase is not configured! Using mock services for demo purposes.");
+  // Mock implementations for demo
+  auth = {
+    currentUser: null,
+    onAuthStateChanged: (cb) => { cb(null); return () => {}; },
+    signOut: async () => {},
+  };
+  db = {};
+}
+
+export { auth, db, isFirebaseConfigured };
