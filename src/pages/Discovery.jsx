@@ -2,14 +2,17 @@ import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import RecipeCard from '../components/RecipeCard';
 import { recipes, DIET_OPTIONS } from '../data/recipes';
 import { useMealPlan } from '../context/MealPlanContext';
+import { usePantry } from '../context/PantryContext';
 import { useNavigate } from 'react-router-dom';
 
 export default function Discovery() {
   const [selectedDiets, setSelectedDiets] = useState({});
   const [searchTerm, setSearchTerm] = useState('');
+  const [showRecommendations, setShowRecommendations] = useState(false);
   const searchInputRef = useRef(null);
   
   const { addMeal } = useMealPlan();
+  const { pantryItems } = usePantry();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -40,6 +43,24 @@ export default function Discovery() {
     }
   };
 
+  // Recommendation logic based on pantry items
+  const recommendedRecipes = useMemo(() => {
+    if (pantryItems.length === 0) return [];
+
+    return recipes.filter(recipe => {
+      // Check if recipe can be made with available pantry items
+      const pantryNames = pantryItems.map(item => item.name.toLowerCase());
+      const recipeIngredients = recipe.ingredients.map(ing => ing.name.toLowerCase());
+      
+      // At least 50% of ingredients should be available in pantry
+      const availableIngredients = recipeIngredients.filter(ing => 
+        pantryNames.some(pantryItem => pantryItem.includes(ing) || ing.includes(pantryItem))
+      );
+      
+      return availableIngredients.length / recipeIngredients.length >= 0.5;
+    }).slice(0, 6); // Limit to 6 recommendations
+  }, [pantryItems]);
+
   // Complex filtering logic using useMemo to optimize re-renders
   const filteredRecipes = useMemo(() => {
     const activeFilters = Object.keys(selectedDiets).filter(k => selectedDiets[k]);
@@ -58,47 +79,69 @@ export default function Discovery() {
   return (
     <div className="flex flex-col md:flex-row gap-6">
       {/* Sidebar Filters */}
-      <aside className="w-full md:w-64 bg-white p-5 rounded-xl shadow-sm border border-gray-100 h-fit flex-shrink-0">
-        <h2 className="text-lg font-bold text-gray-900 mb-4">Filters</h2>
+      <aside className="w-full md:w-64 bg-white p-5 rounded-xl shadow-sm border border-gray-100 h-fit flex-shrink-0 dark:bg-gray-800 dark:border-gray-700">
+        <h2 className="text-lg font-bold text-gray-900 mb-4 dark:text-white">Filters</h2>
         
         <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">Search Name</label>
+          <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-gray-300">Search Name</label>
           <input 
             type="text" 
             ref={searchInputRef}
             placeholder="e.g. Salad"
-            className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
+            className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Dietary Restrictions</label>
+          <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-gray-300">Dietary Restrictions</label>
           <div className="space-y-3">
             {DIET_OPTIONS.map(option => (
               <label key={option.id} className="flex items-center space-x-3 cursor-pointer group">
                 <input 
                   type="checkbox"
-                  className="w-4 h-4 text-primary-600 rounded border-gray-300 focus:ring-primary-500 cursor-pointer"
+                  className="w-4 h-4 text-primary-600 rounded border-gray-300 focus:ring-primary-500 cursor-pointer dark:border-gray-600"
                   checked={!!selectedDiets[option.id]}
                   onChange={() => handleDietChange(option.id)}
                 />
-                <span className="text-gray-700 text-sm font-medium group-hover:text-primary-600 transition">
+                <span className="text-gray-700 text-sm font-medium group-hover:text-primary-600 transition dark:text-gray-300 dark:group-hover:text-primary-400">
                   {option.label}
                 </span>
               </label>
             ))}
           </div>
         </div>
+
+        {pantryItems.length > 0 && (
+          <div className="mt-6">
+            <button
+              onClick={() => setShowRecommendations(!showRecommendations)}
+              className="w-full bg-primary-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-primary-700 transition"
+            >
+              {showRecommendations ? 'Hide' : 'Show'} Recommendations
+            </button>
+          </div>
+        )}
       </aside>
 
       {/* Main Content */}
       <div className="flex-1">
+        {showRecommendations && recommendedRecipes.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-xl font-bold text-gray-900 mb-4 dark:text-white">Recommended for You</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {recommendedRecipes.map(recipe => (
+                <RecipeCard key={recipe.id} recipe={recipe} onSelect={handleAddMeal} />
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="mb-6 flex justify-between items-end">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Discover Recipes</h1>
-            <p className="text-gray-500 text-sm mt-1">Showing {filteredRecipes.length} results</p>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Discover Recipes</h1>
+            <p className="text-gray-500 text-sm mt-1 dark:text-gray-400">Showing {filteredRecipes.length} results</p>
           </div>
         </div>
 
@@ -109,12 +152,12 @@ export default function Discovery() {
             ))}
           </div>
         ) : (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
-            <h3 className="text-lg font-bold text-gray-900 mb-2">No recipes found</h3>
-            <p className="text-gray-500">Try removing some filters or change your search term.</p>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center dark:bg-gray-800 dark:border-gray-700">
+            <h3 className="text-lg font-bold text-gray-900 mb-2 dark:text-white">No recipes found</h3>
+            <p className="text-gray-500 dark:text-gray-400">Try removing some filters or change your search term.</p>
             <button 
               onClick={() => {setSearchTerm(''); setSelectedDiets({});}}
-              className="mt-4 text-primary-600 font-medium hover:underline"
+              className="mt-4 text-primary-600 font-medium hover:underline dark:text-primary-400"
             >
               Clear all filters
             </button>

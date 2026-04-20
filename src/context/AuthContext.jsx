@@ -69,7 +69,8 @@ export function AuthProvider({ children }) {
     currentUser,
     login,
     signup,
-    logout
+    logout,
+    loading
   };
 
   return (

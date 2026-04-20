@@ -1,7 +1,20 @@
-import { Clock, Flame, Info } from 'lucide-react';
+import { Clock, Flame, Info, Heart } from 'lucide-react';
 import { cn } from '../utils/cn';
+import { useFavorites } from '../context/FavoritesContext';
 
 export default function RecipeCard({ recipe, onSelect, actionLabel = "Add to Planner" }) {
+  const { addFavorite, removeFavorite, isFavorite } = useFavorites();
+  const isFav = isFavorite(recipe.id);
+
+  const handleFavorite = (e) => {
+    e.stopPropagation();
+    if (isFav) {
+      removeFavorite(recipe.id);
+    } else {
+      addFavorite(recipe);
+    }
+  };
+
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition flex flex-col h-full group">
       <div className="h-48 w-full overflow-hidden bg-gray-100 relative">
@@ -18,6 +31,12 @@ export default function RecipeCard({ recipe, onSelect, actionLabel = "Add to Pla
             </span>
           ))}
         </div>
+        <button
+          onClick={handleFavorite}
+          className="absolute top-2 left-2 p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-sm hover:bg-white transition"
+        >
+          <Heart className={cn("w-4 h-4", isFav ? "fill-red-500 text-red-500" : "text-gray-400")} />
+        </button>
       </div>
       
       <div className="p-4 flex-1 flex flex-col">
