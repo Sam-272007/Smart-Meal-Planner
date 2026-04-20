@@ -2,9 +2,12 @@ import { useMemo, useState, useCallback } from 'react';
 import { useGrocery } from '../context/GroceryContext';
 import { usePantry } from '../context/PantryContext';
 import { useMealPlan } from '../context/MealPlanContext';
-import { ShoppingCart, Plus, Trash2, CheckCircle2 } from 'lucide-react';
+import { ShoppingCart, Plus, Trash2, CheckCircle2, ChefHat, AlertTriangle } from 'lucide-react';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { recipes } from '../data/recipes';
+import { Button } from '../components/ui';
+import { Card } from '../components/ui';
+import { Input } from '../components/ui';
 
 export default function GroceryList() {
   const { groceryItems, addItem, removeItem, togglePurchased, clearList, loading } = useGrocery();
@@ -73,137 +76,209 @@ export default function GroceryList() {
   }
 
   return (
-    <div>
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Grocery List</h1>
-          <p className="text-gray-500 mt-1">Track what you need and mark items when purchased.</p>
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="text-center space-y-4">
+        <div className="flex items-center justify-center space-x-3 mb-4">
+          <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center">
+            <ShoppingCart className="w-6 h-6 text-primary-600" />
+          </div>
         </div>
-        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-          <button
-            onClick={generateFromPlanner}
-            className="bg-primary-600 text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-primary-700 transition"
-          >
-            Generate from Planner
-          </button>
-          <button
-            onClick={clearList}
-            className="bg-gray-100 text-gray-700 px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-gray-200 transition"
-          >
-            Clear List
-          </button>
-        </div>
+        <h1 className="text-3xl lg:text-4xl font-bold text-secondary-900">Grocery List</h1>
+        <p className="text-lg text-secondary-600 max-w-2xl mx-auto">
+          Keep track of what you need and mark items as purchased. Generate lists from your meal plans automatically.
+        </p>
       </div>
 
-      <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-8">
-        <form onSubmit={handleAddItem} className="grid gap-4 md:grid-cols-[1.5fr_1fr_1fr_auto] items-end">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Item</label>
-            <input
+      {/* Action Buttons */}
+      <div className="flex flex-col sm:flex-row gap-4 justify-center">
+        <Button onClick={generateFromPlanner} size="lg" className="shadow-lg hover:shadow-xl">
+          <ChefHat className="w-5 h-5 mr-2" />
+          Generate from Meal Plan
+        </Button>
+        {groceryItems.length > 0 && (
+          <Button variant="outline" onClick={clearList} size="lg">
+            Clear List
+          </Button>
+        )}
+      </div>
+
+      {/* Add Item Form */}
+      <Card className="p-6">
+        <div className="flex items-center space-x-2 mb-6">
+          <Plus className="w-5 h-5 text-primary-600" />
+          <h2 className="text-lg font-semibold text-secondary-900">Add Item</h2>
+        </div>
+
+        <form onSubmit={handleAddItem} className="grid gap-4 md:grid-cols-[2fr_1fr_1fr_auto] items-end">
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-secondary-700">Item Name</label>
+            <Input
               value={itemName}
               onChange={(e) => setItemName(e.target.value)}
-              placeholder="e.g. Tomatoes"
-              className="w-full px-3 py-2 rounded-md border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500"
+              placeholder="e.g. Organic tomatoes, Milk..."
             />
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
-            <input
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-secondary-700">Quantity</label>
+            <Input
               type="number"
-              min="1"
-              step="0.5"
+              min="0.1"
+              step="0.1"
               value={quantity}
               onChange={(e) => setQuantity(e.target.value)}
-              className="w-full px-3 py-2 rounded-md border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Unit</label>
-            <input
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-secondary-700">Unit</label>
+            <Input
               value={unit}
               onChange={(e) => setUnit(e.target.value)}
-              className="w-full px-3 py-2 rounded-md border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500"
+              placeholder="pcs, lbs, cups..."
             />
           </div>
-          <button
-            type="submit"
-            className="bg-primary-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-primary-700 transition"
-          >
-            <Plus className="w-4 h-4 mr-2" /> Add Item
-          </button>
-        </form>
-      </div>
 
+          <Button type="submit" className="mb-0">
+            <Plus className="w-4 h-4 mr-2" />
+            Add Item
+          </Button>
+        </form>
+      </Card>
+
+      {/* Grocery Items */}
       {groceryItems.length === 0 ? (
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-10 text-center">
-          <ShoppingCart className="mx-auto h-12 w-12 text-primary-600 mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Your grocery list is empty</h2>
-          <p className="text-gray-500">Add an item or generate a list from your meal planner.</p>
-        </div>
-      ) : (
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-xl font-bold text-gray-900">Shopping Items</h2>
-                <p className="text-sm text-gray-500">{shoppingListCount} items in your list.</p>
-              </div>
-              <div className="inline-flex items-center gap-2 text-green-700 bg-green-50 rounded-lg px-3 py-2 text-sm">
-                <CheckCircle2 className="w-4 h-4" /> {groceryItems.filter(item => item.purchased).length} purchased
-              </div>
+        <Card className="p-12 text-center">
+          <div className="space-y-6">
+            <div className="w-20 h-20 bg-secondary-100 rounded-full flex items-center justify-center mx-auto">
+              <ShoppingCart className="w-10 h-10 text-secondary-400" />
             </div>
-            <div className="space-y-3">
-              {groceryItems.map(item => (
-                <div key={item.id} className="flex items-center justify-between gap-4 rounded-xl border border-gray-200 p-4">
-                  <div>
-                    <p className="font-semibold text-gray-900">{item.name}</p>
-                    <p className="text-sm text-gray-500">{item.quantity} {item.unit}</p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={() => togglePurchased(item.id)}
-                      className={`rounded-full px-3 py-1 text-sm font-medium transition ${item.purchased ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
-                    >
-                      {item.purchased ? 'Purchased' : 'Mark bought'}
-                    </button>
-                    <button
-                      onClick={() => removeItem(item.id)}
-                      className="text-red-600 hover:text-red-800"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              ))}
+            <div>
+              <h3 className="text-lg font-semibold text-secondary-900 mb-2">Your grocery list is empty</h3>
+              <p className="text-secondary-600 mb-6">
+                Add items manually or generate a shopping list from your meal planner.
+              </p>
+              <Button onClick={generateFromPlanner}>
+                <ChefHat className="w-4 h-4 mr-2" />
+                Generate from Meal Plan
+              </Button>
             </div>
           </div>
+        </Card>
+      ) : (
+        <div className="grid gap-8 lg:grid-cols-[2fr_1fr]">
+          {/* Main Shopping List */}
+          <Card className="p-6">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-xl font-semibold text-secondary-900">Shopping Items</h2>
+                <p className="text-secondary-600 text-sm">
+                  {shoppingListCount} items • {groceryItems.filter(item => item.purchased).length} purchased
+                </p>
+              </div>
+              <div className="flex items-center space-x-2 bg-green-50 text-green-700 px-3 py-1.5 rounded-full text-sm font-medium">
+                <CheckCircle2 className="w-4 h-4" />
+                <span>{groceryItems.filter(item => item.purchased).length} done</span>
+              </div>
+            </div>
 
-          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Insights</h2>
-            <p className="text-sm text-gray-500 mb-4">Items not found in your pantry are marked as missing.</p>
-            {missingItems.length > 0 ? (
-              <ul className="space-y-2">
-                {missingItems.map(item => (
-                  <li key={item.id} className="rounded-xl bg-red-50 p-3 text-sm text-red-700">{item.name} • {item.quantity} {item.unit}</li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-sm text-gray-500">Everything on this list matches your pantry items.</p>
-            )}
+            <div className="space-y-3">
+              {groceryItems.map(item => (
+                <div
+                  key={item.id}
+                  className={`flex items-center justify-between gap-4 p-4 rounded-lg border transition-all ${
+                    item.purchased
+                      ? 'bg-green-50 border-green-200 opacity-75'
+                      : 'bg-white border-secondary-200 hover:border-primary-300'
+                  }`}
+                >
+                  <div className="flex-1">
+                    <p className={`font-medium ${item.purchased ? 'line-through text-secondary-500' : 'text-secondary-900'}`}>
+                      {item.name}
+                    </p>
+                    <p className="text-sm text-secondary-600">{item.quantity} {item.unit}</p>
+                  </div>
 
-            <div className="mt-6">
-              <h3 className="text-sm font-semibold text-gray-900 mb-3">Group by category</h3>
-              {Object.entries(groupedByCategory).map(([category, items]) => (
-                <div key={category} className="mb-4">
-                  <p className="text-sm font-medium text-gray-700 mb-2">{category}</p>
-                  <ul className="space-y-1">
-                    {items.map(item => (
-                      <li key={item.id} className="text-sm text-gray-600">- {item.name}</li>
-                    ))}
-                  </ul>
+                  <div className="flex items-center gap-3">
+                    <Button
+                      variant={item.purchased ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => togglePurchased(item.id)}
+                      className={item.purchased ? "bg-green-600 hover:bg-green-700" : ""}
+                    >
+                      {item.purchased ? (
+                        <>
+                          <CheckCircle2 className="w-4 h-4 mr-1" />
+                          Done
+                        </>
+                      ) : (
+                        'Mark bought'
+                      )}
+                    </Button>
+
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeItem(item.id)}
+                      className="text-secondary-600 hover:text-red-600"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
+          </Card>
+
+          {/* Insights Sidebar */}
+          <div className="space-y-6">
+            <Card className="p-6">
+              <div className="flex items-center space-x-2 mb-4">
+                <AlertTriangle className="w-5 h-5 text-amber-600" />
+                <h3 className="text-lg font-semibold text-secondary-900">Pantry Check</h3>
+              </div>
+
+              <p className="text-sm text-secondary-600 mb-4">
+                Items not found in your pantry inventory:
+              </p>
+
+              {missingItems.length > 0 ? (
+                <div className="space-y-2">
+                  {missingItems.map(item => (
+                    <div key={item.id} className="flex items-center justify-between bg-amber-50 border border-amber-200 rounded-lg p-3">
+                      <span className="text-sm font-medium text-amber-800">{item.name}</span>
+                      <span className="text-xs text-amber-600">{item.quantity} {item.unit}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-4">
+                  <CheckCircle2 className="w-8 h-8 text-green-600 mx-auto mb-2" />
+                  <p className="text-sm text-green-700 font-medium">All items available!</p>
+                  <p className="text-xs text-secondary-600 mt-1">Everything matches your pantry</p>
+                </div>
+              )}
+            </Card>
+
+            <Card className="p-6">
+              <h3 className="text-lg font-semibold text-secondary-900 mb-4">By Category</h3>
+              <div className="space-y-4">
+                {Object.entries(groupedByCategory).map(([category, items]) => (
+                  <div key={category}>
+                    <p className="text-sm font-medium text-secondary-700 mb-2">{category}</p>
+                    <ul className="space-y-1">
+                      {items.map(item => (
+                        <li key={item.id} className="text-sm text-secondary-600 flex items-center justify-between">
+                          <span>{item.name}</span>
+                          <span className="text-xs">{item.quantity} {item.unit}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            </Card>
           </div>
         </div>
       )}
